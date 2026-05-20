@@ -1,0 +1,11 @@
+# Go build artifacts
+worker
+client
+*.test
+*.out
+
+# IDE/editor
+.idea/
+.vscode/
+*.swp
+.DS_Store
