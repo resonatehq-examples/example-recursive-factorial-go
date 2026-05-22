@@ -1,6 +1,8 @@
-# Go build artifacts
-worker
-client
+# Go build artifacts — anchored to root so `cmd/worker/` and `cmd/client/`
+# source dirs are NOT ignored (gitignore patterns without a leading slash
+# match at any depth).
+/worker
+/client
 *.test
 *.out
 
