@@ -6,6 +6,12 @@
   </picture>
 </p>
 
+<p align="center">
+  <a href="https://resonatehq.github.io/examples-ci/">
+    <img src="https://img.shields.io/endpoint?url=https://resonatehq.github.io/examples-ci/status/example-recursive-factorial-go.json" alt="examples-ci status">
+  </a>
+</p>
+
 # Recursive Factorial | Resonate Go SDK
 
 Distributed recursion via durable RPC: `factorial(n)` recursively dispatches `factorial(n-1)` through the server, so each step is a promise that any registered worker can pick up.
