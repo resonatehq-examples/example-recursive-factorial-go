@@ -1,2 +1,4 @@
 github.com/resonatehq/resonate-sdk-go v0.0.0-20260604160505-290b21135aea h1:eAajUKTDlbKbjW+WW579pG8Djc+UU7CINhgwgVEFSUA=
 github.com/resonatehq/resonate-sdk-go v0.0.0-20260604160505-290b21135aea/go.mod h1:ILiFGjo0uiodJsudN1WaauseCip52l4xOr24wU7dI8Y=
+github.com/resonatehq/resonate-sdk-go v0.0.0-20260605184126-22076134651f h1:YKlu4hhj9lnUdG83PfJeyqDvcC+qGcuoFXpLFLNrJCY=
+github.com/resonatehq/resonate-sdk-go v0.0.0-20260605184126-22076134651f/go.mod h1:ILiFGjo0uiodJsudN1WaauseCip52l4xOr24wU7dI8Y=
