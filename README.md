@@ -66,7 +66,7 @@ fmt.Printf("factorial(%d) = %d\n", *n, result)
   ```
   brew install resonatehq/tap/resonate
   ```
-  Other install paths: <https://docs.resonatehq.io/get-started/install>.
+  Other install paths: <https://docs.resonatehq.io/get-started/quickstart>.
 
 ## Setup
 
@@ -136,7 +136,7 @@ example-recursive-factorial-go/
 
 ## Next steps
 
-- [Durable promises](https://docs.resonatehq.io/concepts/durable-promises) — how recursive `ctx.RPC` calls become a tree of cached promises.
+- [Durable promises](https://docs.resonatehq.io/learn/durable-promises) — how recursive `ctx.RPC` calls become a tree of cached promises.
 - [Get started](https://docs.resonatehq.io/get-started) — install paths + first-program walkthrough.
 - [`example-fan-out-fan-in-go`](https://github.com/resonatehq-examples/example-fan-out-fan-in-go) — flat parallelism instead of recursive fan-out.
 - **Coming from Temporal?** See [MIGRATING-FROM-TEMPORAL.md](MIGRATING-FROM-TEMPORAL.md) — a side-by-side port of the matching `temporalio/samples-go` example.

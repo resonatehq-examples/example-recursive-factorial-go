@@ -218,4 +218,4 @@ idempotency must be configured explicitly at the call site via
 - Temporal sample (child-workflow): https://github.com/temporalio/samples-go/tree/main/child-workflow
 - Temporal sample (child-workflow-continue-as-new): https://github.com/temporalio/samples-go/tree/main/child-workflow-continue-as-new
 - This example's README: [README.md](README.md)
-- Durable promises: https://docs.resonatehq.io/concepts/durable-promises
+- Durable promises: https://docs.resonatehq.io/learn/durable-promises
