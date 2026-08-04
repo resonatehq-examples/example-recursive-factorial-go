@@ -1,0 +1,6 @@
+{
+  "docs": ["README.md", "MIGRATING-FROM-TEMPORAL.md"],
+  "sources": {
+    "self": { "path": "." }
+  }
+}

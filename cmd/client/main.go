@@ -39,6 +39,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
+	// #region client
 	id := fmt.Sprintf("factorial-%d", *n)
 	target := fmt.Sprintf("poll://any@%s", factorial.WorkerGroup)
 
@@ -53,4 +54,5 @@ func main() {
 		log.Fatalf("Result: %v", err)
 	}
 	fmt.Printf("factorial(%d) = %d\n", *n, result)
+	// #endregion
 }

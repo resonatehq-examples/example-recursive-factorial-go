@@ -23,6 +23,7 @@ func main() {
 	url := flag.String("url", "http://localhost:8001", "Resonate server URL")
 	flag.Parse()
 
+	// #region worker
 	pid := fmt.Sprintf("factorial-worker-%d", os.Getpid())
 	r, err := resonate.New(resonate.Config{
 		Network: httpnet.NewHTTP(*url, httpnet.HTTPOptions{
@@ -38,6 +39,7 @@ func main() {
 	if _, err := resonate.Register(r, factorial.Name, factorial.Workflow); err != nil {
 		log.Fatalf("Register: %v", err)
 	}
+	// #endregion
 
 	fmt.Printf("[worker pid=%s group=%s] ready — waiting for tasks (Ctrl-C to exit)\n", pid, factorial.WorkerGroup)
 

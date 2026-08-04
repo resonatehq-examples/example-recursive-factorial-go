@@ -27,35 +27,71 @@ Distributed recursion via durable RPC: `factorial(n)` recursively dispatches `fa
 
 ## The code
 
+The workflow, in full ([`factorial/factorial.go`](./factorial/factorial.go)):
+
+<!-- sotto self:factorial/factorial.go -->
+
 ```go
-// factorial/factorial.go
+// Package factorial defines the recursive-factorial workflow shared by the
+// worker and client binaries in this example.
+package factorial
+
+import (
+	resonate "github.com/resonatehq/resonate-sdk-go"
+)
+
+// Name is the registered function name. Both the worker (Register) and the
+// client (r.RPC) use this string.
 const Name = "Factorial"
+
+// WorkerGroup is the dispatch group the worker(s) join and the client targets
+// when calling RPC. Using a non-default group keeps clients out of the
+// task-dispatch pool — only processes that actually have Factorial registered
+// will be asked to execute it.
 const WorkerGroup = "factorial-workers"
 
+// Args is the workflow input.
 type Args struct {
-    N int `json:"n"`
+	N int `json:"n"`
 }
 
+// Workflow computes n! by recursively dispatching factorial(n-1) via ctx.RPC.
+// Each recursive call is a durable promise on the server; with multiple
+// workers running, the recursion fans out across them.
 func Workflow(ctx *resonate.Context, args Args) (int, error) {
-    if args.N <= 1 {
-        return 1, nil
-    }
-    f, err := ctx.RPC(Name, Args{N: args.N - 1})
-    if err != nil { return 0, err }
-    var sub int
-    if err := f.Await(&sub); err != nil { return 0, err }
-    return args.N * sub, nil
+	if args.N <= 1 {
+		return 1, nil
+	}
+	f, err := ctx.RPC(Name, Args{N: args.N - 1})
+	if err != nil {
+		return 0, err
+	}
+	var sub int
+	if err := f.Await(&sub); err != nil {
+		return 0, err
+	}
+	return args.N * sub, nil
 }
 ```
 
+Invoking it from the client ([`cmd/client/main.go`](./cmd/client/main.go)). The promise ID is stable, so a second run with the same `-n` returns the cached result:
+
+<!-- sotto self:cmd/client/main.go#client -->
+
 ```go
-// cmd/client/main.go (excerpt)
-id := fmt.Sprintf("factorial-%d", *n) // stable id — second run returns cached result
-h, _ := r.RPC(ctx, id, factorial.Name, factorial.Args{N: *n},
-    resonate.RPCOptions{Target: factorial.WorkerGroup})
+id := fmt.Sprintf("factorial-%d", *n)
+target := fmt.Sprintf("poll://any@%s", factorial.WorkerGroup)
+
+h, err := r.RPC(ctx, id, factorial.Name, factorial.Args{N: *n},
+	resonate.RPCOptions{Target: target})
+if err != nil {
+	log.Fatalf("RPC: %v", err)
+}
 
 var result int
-_ = h.Result(ctx, &result)
+if err := h.Result(ctx, &result); err != nil {
+	log.Fatalf("Result: %v", err)
+}
 fmt.Printf("factorial(%d) = %d\n", *n, result)
 ```
 
@@ -114,7 +150,7 @@ Three files:
 
 1. **[factorial/factorial.go](./factorial/factorial.go)** — the workflow. `Workflow(ctx, args)` recursively calls itself via `ctx.RPC(Name, ...)`, awaits the sub-result, multiplies, returns. Stops when `args.N <= 1`. Also exports `Name` and `WorkerGroup` constants shared by the two binaries.
 2. **[cmd/worker/main.go](./cmd/worker/main.go)** — constructs an HTTP network in the `factorial-workers` group, registers `factorial.Workflow` under `factorial.Name`, then blocks on SIGINT/SIGTERM. The Resonate SDK's background goroutines pick up dispatched tasks automatically.
-3. **[cmd/client/main.go](./cmd/client/main.go)** — uses `r.RPC(ctx, id, factorial.Name, args, resonate.RPCOptions{Target: factorial.WorkerGroup})` to invoke the workflow remotely, then `h.Result(ctx, &result)` to block for the typed result. The client does NOT register the workflow — it only needs to know the function name and which group to target.
+3. **[cmd/client/main.go](./cmd/client/main.go)** — uses `r.RPC(ctx, id, factorial.Name, args, resonate.RPCOptions{Target: "poll://any@" + factorial.WorkerGroup})` to invoke the workflow remotely, then `h.Result(ctx, &result)` to block for the typed result. The target is a poll address, not a bare group name. The client does NOT register the workflow — it only needs to know the function name and which group to target.
 
 Why the worker group: without it, the client process also subscribes to the default dispatch pool and the server may try to dispatch tasks to it, producing "function not found" noise on retry. Using a named worker group keeps clients out of the pool.
 
