@@ -144,15 +144,12 @@ factorial(6) = 720
 
 On the dashboard at <http://localhost:8001> you'll see one root promise (`factorial-6`) plus a chain of child promises for each recursive call (`factorial-6.1`, `factorial-6.1.1`, …). Re-running the client with `-n 6` resolves immediately — the root promise is already settled.
 
-## The code (detail)
+## The two binaries
 
-Three files:
+Neither binary is shown above, so briefly:
 
-1. **[factorial/factorial.go](./factorial/factorial.go)** — the workflow. `Workflow(ctx, args)` recursively calls itself via `ctx.RPC(Name, ...)`, awaits the sub-result, multiplies, returns. Stops when `args.N <= 1`. Also exports `Name` and `WorkerGroup` constants shared by the two binaries.
-2. **[cmd/worker/main.go](./cmd/worker/main.go)** — constructs an HTTP network in the `factorial-workers` group, registers `factorial.Workflow` under `factorial.Name`, then blocks on SIGINT/SIGTERM. The Resonate SDK's background goroutines pick up dispatched tasks automatically.
-3. **[cmd/client/main.go](./cmd/client/main.go)** — uses `r.RPC(ctx, id, factorial.Name, args, resonate.RPCOptions{Target: "poll://any@" + factorial.WorkerGroup})` to invoke the workflow remotely, then `h.Result(ctx, &result)` to block for the typed result. The target is a poll address, not a bare group name. The client does NOT register the workflow — it only needs to know the function name and which group to target.
-
-Why the worker group: without it, the client process also subscribes to the default dispatch pool and the server may try to dispatch tasks to it, producing "function not found" noise on retry. Using a named worker group keeps clients out of the pool.
+- **[cmd/worker/main.go](./cmd/worker/main.go)** — constructs an HTTP network in the `factorial-workers` group, registers `factorial.Workflow` under `factorial.Name`, then blocks on SIGINT/SIGTERM. The SDK's background goroutines pick up dispatched tasks automatically.
+- **[cmd/client/main.go](./cmd/client/main.go)** — invokes remotely and blocks for the typed result. It does **not** register the workflow; it only needs the function name and the group to target.
 
 ## File structure
 
@@ -181,8 +178,8 @@ example-recursive-factorial-go/
 
 - Discord: <https://resonatehq.io/discord>
 - X: <https://x.com/resonatehqio>
-- LinkedIn: <https://linkedin.com/company/resonatehq>
-- YouTube: <https://youtube.com/@resonatehq>
+- LinkedIn: <https://www.linkedin.com/company/resonatehqio>
+- YouTube: <https://www.youtube.com/@resonatehqio>
 - Journal: <https://journal.resonatehq.io>
 
 ## License
