@@ -24,6 +24,7 @@ type Args struct {
 // Workflow computes n! by recursively dispatching factorial(n-1) via ctx.RPC.
 // Each recursive call is a durable promise on the server; with multiple
 // workers running, the recursion fans out across them.
+// #region workflow
 func Workflow(ctx *resonate.Context, args Args) (int, error) {
 	if args.N <= 1 {
 		return 1, nil
@@ -38,3 +39,5 @@ func Workflow(ctx *resonate.Context, args Args) (int, error) {
 	}
 	return args.N * sub, nil
 }
+
+// #endregion

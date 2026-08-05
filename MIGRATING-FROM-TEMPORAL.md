@@ -38,51 +38,64 @@ func SampleParentWorkflow(ctx workflow.Context) (string, error) {
 
 ### Resonate (this example) — `factorial/factorial.go`
 
+<!-- sotto self:factorial/factorial.go#workflow -->
+
 ```go
 func Workflow(ctx *resonate.Context, args Args) (int, error) {
-    if args.N <= 1 {
-        return 1, nil
-    }
-    f, err := ctx.RPC(Name, Args{N: args.N - 1})
-    if err != nil {
-        return 0, err
-    }
-    var sub int
-    if err := f.Await(&sub); err != nil {
-        return 0, err
-    }
-    return args.N * sub, nil
+	if args.N <= 1 {
+		return 1, nil
+	}
+	f, err := ctx.RPC(Name, Args{N: args.N - 1})
+	if err != nil {
+		return 0, err
+	}
+	var sub int
+	if err := f.Await(&sub); err != nil {
+		return 0, err
+	}
+	return args.N * sub, nil
 }
 ```
 
-The call site in the worker and client binaries:
+The worker binary registers the function into the named group (`cmd/worker/main.go`):
+
+<!-- sotto self:cmd/worker/main.go#worker -->
 
 ```go
-// cmd/worker/main.go — registers the function into the named group
-network := httpnet.NewHTTP("http://localhost:8001", httpnet.HTTPOptions{
-    Group: factorial.WorkerGroup,
+pid := fmt.Sprintf("factorial-worker-%d", os.Getpid())
+r, err := resonate.New(resonate.Config{
+	Network: httpnet.NewHTTP(*url, httpnet.HTTPOptions{
+		PID:   pid,
+		Group: factorial.WorkerGroup,
+	}),
 })
-r, err := resonate.New(resonate.Config{Network: network})
 if err != nil {
-    log.Fatalf("resonate.New: %v", err)
+	log.Fatalf("resonate.New: %v", err)
 }
+defer func() { _ = r.Stop() }()
+
 if _, err := resonate.Register(r, factorial.Name, factorial.Workflow); err != nil {
-    log.Fatalf("Register: %v", err)
+	log.Fatalf("Register: %v", err)
 }
 ```
 
+The client binary invokes it by name, targeting the worker group (`cmd/client/main.go`):
+
+<!-- sotto self:cmd/client/main.go#client -->
+
 ```go
-// cmd/client/main.go — invokes by name, targeting the worker group
 id := fmt.Sprintf("factorial-%d", *n)
+target := fmt.Sprintf("poll://any@%s", factorial.WorkerGroup)
+
 h, err := r.RPC(ctx, id, factorial.Name, factorial.Args{N: *n},
-    resonate.RPCOptions{Target: factorial.WorkerGroup})
+	resonate.RPCOptions{Target: target})
 if err != nil {
-    log.Fatalf("RPC: %v", err)
+	log.Fatalf("RPC: %v", err)
 }
 
 var result int
 if err := h.Result(ctx, &result); err != nil {
-    log.Fatalf("Result: %v", err)
+	log.Fatalf("Result: %v", err)
 }
 fmt.Printf("factorial(%d) = %d\n", *n, result)
 ```
@@ -118,8 +131,9 @@ fmt.Printf("factorial(%d) = %d\n", *n, result)
 
 4. **Register once on the worker; do not register on the client.** Call
    `resonate.Register(r, factorial.Name, factorial.Workflow)` in the worker binary.
-   The client binary constructs a `resonate.New` without a `Network` (just a `URL`)
-   and never calls `Register`. Using a named group (`factorial.WorkerGroup`) keeps
+   The client binary constructs its own `resonate.New` in a separate group
+   (`factorial-client`) and never calls `Register`. Using a named group for the
+   workers (`factorial.WorkerGroup`) keeps
    the client out of the task-dispatch pool, which avoids "function not found" errors
    if the server tries to route a recursive step to the client process.
 
@@ -178,7 +192,8 @@ side effects in your function body need to be idempotent (or guarded by `ctx.Run
 Temporal routes work to workers via task queues, named at worker startup and
 referenced in activity/child-workflow options. Resonate uses a similar concept
 called a group: the worker joins `factorial.WorkerGroup` via `httpnet.HTTPOptions`,
-and the client targets the same group with `resonate.RPCOptions{Target: factorial.WorkerGroup}`.
+and the client targets the same group with a poll address —
+`resonate.RPCOptions{Target: "poll://any@" + factorial.WorkerGroup}`.
 A key difference: in this example the client is a separate binary that does
 **not** register the workflow function. Without a named group, the server could
 dispatch recursive steps to the client process and fail. The group name is a
